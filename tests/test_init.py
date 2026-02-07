@@ -112,6 +112,37 @@ def test_init_generated_test_imports_from_package(tmp_path: Path, monkeypatch: P
     assert "def test_greet_default" in content
 
 
+def test_init_doc_before_run_in_pyproject(tmp_path: Path, monkeypatch: Path) -> None:
+    """Scaffolded pyproject.toml should include doc-before-run = true."""
+    monkeypatch.chdir(tmp_path)
+    _invoke_init(tmp_path)
+    content = (tmp_path / "myapp" / "pyproject.toml").read_text()
+    assert "doc-before-run = true" in content
+
+
+def test_init_ci_workflow_exists(tmp_path: Path, monkeypatch: Path) -> None:
+    """sully init should scaffold .github/workflows/ci.yml."""
+    monkeypatch.chdir(tmp_path)
+    _invoke_init(tmp_path)
+    ci = tmp_path / "myapp" / ".github" / "workflows" / "ci.yml"
+    assert ci.is_file()
+
+
+def test_init_ci_workflow_content(tmp_path: Path, monkeypatch: Path) -> None:
+    """CI workflow should contain expected jobs and steps."""
+    monkeypatch.chdir(tmp_path)
+    _invoke_init(tmp_path)
+    content = (tmp_path / "myapp" / ".github" / "workflows" / "ci.yml").read_text()
+
+    assert "sully check" in content
+    assert "sully test" in content
+    assert "sully doc" in content
+    assert "deploy-docs" in content
+    assert "actions/deploy-pages@v4" in content
+    assert "astral-sh/setup-uv@v4" in content
+    assert "3.12" in content
+
+
 def test_init_hyphenated_name(tmp_path: Path, monkeypatch: Path) -> None:
     """Hyphens in project name should become underscores in package name."""
     monkeypatch.chdir(tmp_path)

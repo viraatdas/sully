@@ -1,17 +1,19 @@
-"""sully run — type-check gate + run main script."""
+"""sully run — type-check gate + doc gate + run main script."""
 
 import sys
 
 import click
 
 from sully import uv
-from sully.config import get_check_config, get_main_script
+from sully.commands.doc import run_pdoc
+from sully.config import get_check_config, get_doc_config, get_main_script
 
 
 @click.command()
 @click.option("--no-check", is_flag=True, help="Skip the type-check gate.")
-def run(no_check: bool) -> None:
-    """Type-check then run the project's main script."""
+@click.option("--no-doc", is_flag=True, help="Skip the doc-generation gate.")
+def run(no_check: bool, no_doc: bool) -> None:
+    """Type-check, generate docs, then run the project's main script."""
     cfg = get_check_config()
 
     # Type-check gate
@@ -23,6 +25,17 @@ def run(no_check: bool) -> None:
             click.echo("Use --no-check to bypass.")
             sys.exit(result.returncode)
         click.echo(click.style("Type check passed.", fg="green"))
+
+    # Doc-generation gate
+    doc_cfg = get_doc_config()
+    if not no_doc and doc_cfg["doc-before-run"]:
+        click.echo("Generating docs...")
+        rc = run_pdoc(doc_cfg["output"])
+        if rc != 0:
+            click.echo(click.style("Doc generation failed — fix before running.", fg="red", bold=True))
+            click.echo("Use --no-doc to bypass.")
+            sys.exit(rc)
+        click.echo(click.style("Docs generated.", fg="green"))
 
     # Find main script
     main_script = get_main_script()

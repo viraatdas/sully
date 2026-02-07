@@ -46,3 +46,13 @@ def get_check_config(start: Path | None = None) -> dict:
         "mode": check.get("mode", "strict"),
         "check-before-run": check.get("check-before-run", True),
     }
+
+
+def get_doc_config(start: Path | None = None) -> dict:
+    """Return [tool.sully.doc] config with defaults."""
+    cfg = load(start)
+    doc = cfg.get("doc", {})
+    return {
+        "output": doc.get("output", "docs"),
+        "doc-before-run": doc.get("doc-before-run", True),
+    }

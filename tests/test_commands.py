@@ -85,7 +85,8 @@ class TestRun:
     def test_run_no_main_script_configured(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Should error when [tool.sully] main is not set."""
         (tmp_path / "pyproject.toml").write_text(
-            '[tool.sully.check]\nmode = "off"\n'
+            '[tool.sully.check]\nmode = "off"\n\n'
+            '[tool.sully.doc]\ndoc-before-run = false\n'
         )
         monkeypatch.chdir(tmp_path)
         runner = CliRunner()
@@ -97,7 +98,8 @@ class TestRun:
         """--no-check should skip pyright even when check-before-run is true."""
         (tmp_path / "pyproject.toml").write_text(
             '[tool.sully]\nmain = "main.py"\n\n'
-            '[tool.sully.check]\nmode = "strict"\ncheck-before-run = true\n'
+            '[tool.sully.check]\nmode = "strict"\ncheck-before-run = true\n\n'
+            '[tool.sully.doc]\ndoc-before-run = false\n'
         )
         (tmp_path / "main.py").write_text("print('hi')\n")
         monkeypatch.chdir(tmp_path)
@@ -154,6 +156,78 @@ class TestRun:
             mock_uv.run_script.return_value = mock_result
             result = runner.invoke(cli, ["run"])
         mock_uv.run_cmd.assert_not_called()
+
+    def test_run_doc_gate_fails_blocks_execution(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When doc generation fails, the script should NOT run."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[tool.sully]\nmain = "main.py"\n\n'
+            '[tool.sully.check]\nmode = "off"\n\n'
+            '[tool.sully.doc]\ndoc-before-run = true\n'
+        )
+        monkeypatch.chdir(tmp_path)
+        runner = CliRunner()
+        mock_fail = MagicMock(returncode=1)
+        with patch("sully.commands.run.uv") as mock_uv, \
+             patch("sully.commands.doc.uv") as mock_doc_uv:
+            mock_doc_uv.run_cmd.return_value = mock_fail
+            result = runner.invoke(cli, ["run"])
+        assert result.exit_code != 0
+        assert "doc generation failed" in result.output.lower()
+        mock_uv.run_script.assert_not_called()
+
+    def test_run_no_doc_flag_skips_doc_gate(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """--no-doc should skip doc generation."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[tool.sully]\nmain = "main.py"\n\n'
+            '[tool.sully.check]\nmode = "off"\n\n'
+            '[tool.sully.doc]\ndoc-before-run = true\n'
+        )
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        monkeypatch.chdir(tmp_path)
+        runner = CliRunner()
+        mock_result = MagicMock(returncode=0)
+        with patch("sully.commands.run.uv") as mock_uv, \
+             patch("sully.commands.doc.uv") as mock_doc_uv:
+            mock_uv.run_script.return_value = mock_result
+            result = runner.invoke(cli, ["run", "--no-doc"])
+        mock_doc_uv.run_cmd.assert_not_called()
+        mock_uv.run_script.assert_called_once_with("main.py")
+
+    def test_run_doc_before_run_false_skips_gate(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When doc-before-run=false, run should skip the doc gate."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[tool.sully]\nmain = "main.py"\n\n'
+            '[tool.sully.check]\nmode = "off"\n\n'
+            '[tool.sully.doc]\ndoc-before-run = false\n'
+        )
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        monkeypatch.chdir(tmp_path)
+        runner = CliRunner()
+        mock_result = MagicMock(returncode=0)
+        with patch("sully.commands.run.uv") as mock_uv, \
+             patch("sully.commands.doc.uv") as mock_doc_uv:
+            mock_uv.run_script.return_value = mock_result
+            result = runner.invoke(cli, ["run"])
+        mock_doc_uv.run_cmd.assert_not_called()
+
+    def test_run_doc_gate_passes_then_runs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """When doc generation passes, the script should run."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[tool.sully]\nmain = "main.py"\n\n'
+            '[tool.sully.check]\nmode = "off"\n\n'
+            '[tool.sully.doc]\ndoc-before-run = true\n'
+        )
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        monkeypatch.chdir(tmp_path)
+        runner = CliRunner()
+        mock_ok = MagicMock(returncode=0)
+        with patch("sully.commands.run.uv") as mock_uv, \
+             patch("sully.commands.doc.uv") as mock_doc_uv:
+            mock_doc_uv.run_cmd.return_value = mock_ok
+            mock_uv.run_script.return_value = mock_ok
+            result = runner.invoke(cli, ["run"])
+        mock_doc_uv.run_cmd.assert_called_once()
+        mock_uv.run_script.assert_called_once_with("main.py")
 
     def test_run_no_pyproject(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Should error when no pyproject.toml exists."""

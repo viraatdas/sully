@@ -46,6 +46,7 @@ check-before-run = true
 
 [tool.sully.doc]
 output = "docs"
+doc-before-run = true
 """
     )
 
@@ -118,6 +119,54 @@ docs/
 .mypy_cache/
 .ruff_cache/
 .DS_Store
+"""
+    )
+
+    # -- CI workflow ----------------------------------------------------------
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text(
+        f"""\
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install {python_version}
+      - run: uv sync
+      - run: uv run sully check
+      - run: uv run sully test
+      - run: uv run sully doc
+
+  deploy-docs:
+    if: github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{{{ steps.deploy.outputs.page_url }}}}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install {python_version}
+      - run: uv sync
+      - run: uv run sully doc
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/
+      - id: deploy
+        uses: actions/deploy-pages@v4
 """
     )
 

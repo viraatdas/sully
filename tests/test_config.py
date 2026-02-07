@@ -108,6 +108,25 @@ def test_load_full_returns_entire_document(tmp_path: Path, monkeypatch: pytest.M
     assert doc["tool"]["sully"]["main"] == "x.py"
 
 
+def test_get_doc_config_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without [tool.sully.doc], defaults should be docs + doc-before-run."""
+    (tmp_path / "pyproject.toml").write_text("[tool.sully]\n")
+    monkeypatch.chdir(tmp_path)
+    cfg = config.get_doc_config()
+    assert cfg["output"] == "docs"
+    assert cfg["doc-before-run"] is True
+
+
+def test_get_doc_config_custom(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.sully.doc]\noutput = "apidocs"\ndoc-before-run = false\n'
+    )
+    monkeypatch.chdir(tmp_path)
+    cfg = config.get_doc_config()
+    assert cfg["output"] == "apidocs"
+    assert cfg["doc-before-run"] is False
+
+
 def test_find_pyproject_no_pyproject_in_empty_tree(tmp_path: Path) -> None:
     """Explicit start path with no pyproject.toml anywhere above."""
     deep = tmp_path / "a" / "b"

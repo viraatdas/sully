@@ -4,9 +4,6 @@
 
 sully is the layer between you and Python that enforces the practices production code demands — types, tests, docs, structure — so you build intentionally from day one instead of bolting quality on later.
 
-<p align="center">
-  <img src="logo.png" alt="sully logo" width="25%">
-</p>
 
 ## Why sully?
 

@@ -64,6 +64,47 @@ sully doc          # generate docs
 | `sully test [--generate]` | Run pytest; `--generate` creates test stubs |
 | `sully doc` | Generate docs via pdoc |
 
+## What sully Expects
+
+sully enforces pyright strict mode. Every function needs type annotations and docstrings — the way production code should look.
+
+**This will pass `sully check`:**
+
+```python
+def calculate_total(prices: list[float], tax_rate: float) -> float:
+    """Return the total price including tax."""
+    subtotal = sum(prices)
+    return subtotal * (1.0 + tax_rate)
+
+
+def format_invoice(customer: str, items: list[tuple[str, float]]) -> str:
+    """Format a plaintext invoice for the given customer and line items."""
+    lines: list[str] = [f"Invoice for {customer}", ""]
+    for name, price in items:
+        lines.append(f"  {name}: ${price:.2f}")
+    total = calculate_total([p for _, p in items], tax_rate=0.08)
+    lines.append(f"\n  Total: ${total:.2f}")
+    return "\n".join(lines)
+```
+
+**This won't:**
+
+```python
+# no types, no docstrings — sully run will block this
+def calculate_total(prices, tax_rate):
+    return sum(prices) * (1 + tax_rate)
+
+def format_invoice(customer, items):
+    lines = [f"Invoice for {customer}", ""]
+    for name, price in items:
+        lines.append(f"  {name}: ${price:.2f}")
+    total = calculate_total([p for _, p in items], 0.08)
+    lines.append(f"\n  Total: ${total:.2f}")
+    return "\n".join(lines)
+```
+
+The difference is small but the signal is clear: annotate your code, document your intent, and sully will let you ship.
+
 ## Type Enforcement
 
 The core feature. By default every project uses pyright in strict mode.

@@ -1,96 +1,104 @@
-# sullivan 
-Cargo for Python - package manager for python
+# sully
 
-Still under development - expect things to not work perfectly
+**Production-ready Python, from the first line.**
+
+sully is the layer between you and Python that enforces the practices production code demands — types, tests, docs, structure — so you build intentionally from day one instead of bolting quality on later.
 
 <p align="center">
-  <img src="logo.png" alt="Sullivan Logo" width="25%">
+  <img src="logo.png" alt="sully logo" width="25%">
 </p>
 
-[![PyPI version](https://badge.fury.io/py/sullivan.svg)](https://badge.fury.io/py/sullivan)
+## Why sully?
+
+Most Python projects start loose and add guardrails later — type hints after the prototype, tests after the bug, docs after the deadline. sully flips that. It scaffolds projects with strict types, test stubs, and doc generation from the start, then refuses to run code that doesn't pass muster.
+
+- **Intentional by design** — pyright strict mode is the default, not an afterthought
+- **Guardrails, not suggestions** — `sully run` won't execute code with type errors
+- **Production-grade scaffolding** — `sully init` generates a fully typed project with tests, docs config, and PEP 561 markers
+- **Ship with confidence** — types, tests, and docs are enforced from the first commit
 
 ## Features
-- [ ] **Initialize Projects**: Create a new Python project with a standard structure.
-- [ ] **Install Packages**: Install Python packages and manage dependencies.
-- [ ] **Configure Repository**: Set and configure package repositories.
-- [ ] **Run Projects**: Run Python projects with a simple command.
-- [ ] **Run Tests**: Run tests for your Python project.
-- [ ] **Generate Documentation**: Generate documentation for your Python project.
-- [ ] Super fast dependency management
-- [ ] Better lock file management
-- [ ] Easy to publish to pypi/other repositories
-- [ ] Integrated testing and coverage
-- [ ] Security features to identify old packages
-- [ ] Easily allow you to configure Python versions (without explicitly using pyenv)
+
+- **Type enforcement** — pyright strict mode by default; `sully run` blocks execution until types pass
+- **Built on uv** — fast dependency management, no pip
+- **Opinionated structure** — every project starts with types, tests, docs, and a clean layout
+- **One config file** — everything in `pyproject.toml` under `[tool.sully]`
+
+## Requirements
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
 ## Installation
+
 ```
-pip install sullivan
+uv pip install sully
 ```
 
-## Usage
+Or for development:
 
-### Initialize a project
 ```
-sullivan init <project_name>
-```
-
-Ex.
-```
-sullivan init my_project
+git clone https://github.com/viraatdas/sully.git
+cd sully
+uv pip install -e .
 ```
 
-This will produce:
+## Quick Start
+
+```bash
+sully init my_app --python 3.12
+cd my_app
+sully check       # run pyright
+sully run          # type-check then run
+sully test         # run pytest
+sully doc          # generate docs
 ```
-my_project/
-├── sullivan.toml
-├── setup.py
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `sully init <name> [--python 3.12]` | Create a new typed Python project |
+| `sully add <pkg> [--dev] [--group G]` | Add dependency via `uv add` |
+| `sully remove <pkg>` | Remove dependency via `uv remove` |
+| `sully sync` | Install all deps via `uv sync` |
+| `sully check` | Run pyright type checker |
+| `sully run [--no-check]` | Type-check then run main script |
+| `sully test [--generate]` | Run pytest; `--generate` creates test stubs |
+| `sully doc` | Generate docs via pdoc |
+
+## Type Enforcement
+
+The core feature. By default every project uses pyright in strict mode.
+
+`sully run` runs `sully check` first and won't execute if types fail. Pass `--no-check` to bypass.
+
+Configure in `pyproject.toml`:
+
+```toml
+[tool.sully.check]
+mode = "strict"           # "off", "basic", "standard", "strict"
+check-before-run = true
+```
+
+## Generated Project Structure
+
+```
+my_app/
+├── pyproject.toml
+├── pyrightconfig.json
 ├── src/
-│   └── main.py
+│   └── my_app/
+│       ├── __init__.py
+│       ├── main.py
+│       └── py.typed
 ├── tests/
 │   └── test_main.py
-├── target/
-│   └── dependencies/
+├── .python-version
+├── .gitignore
+└── README.md
 ```
 
-### Install a package
-```
-sullivan install <package_name>
-```
+## License
 
-### Configure repository 
-```
-sullivan configure <repository_url>
-``` 
-
-This can also be modified from the `sullivan.toml` file
-
-### Run the project
-```
-sullivan run
-```
-
-### Run tests
-```
-sullivan test
-```
-
-
-### Generate documentation
-```
-sullivan doc
-```
-
-
-## Local dependency management
-To mimic Cargo’s local installation approach:
-
-- Dependencies will be installed in a target/dependencies directory within the project.
-- Each project's environment will be isolated to ensure no conflicts with global Python packages.
-
-
-## Notes 
-- Ensure compatibility with existing tools and libraries within the Python ecosystem.
-- Provide a clear and simple way to manage Python versions.
-- Optimize performance for dependency resolution and installation.
-
+Apache 2.0

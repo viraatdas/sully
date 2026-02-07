@@ -1,4 +1,20 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
+[project]
+name = "sully"
+version = "0.2.0"
+description = "Production-ready Python, from the first line."
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+authors = [{ name = "Viraat Das", email = "viraat.laldas@gmail.com" }]
+dependencies = ["click>=8.0", "tomlkit>=0.12"]
+
+[project.scripts]
+sully = "sully.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/viraatdas/sully"
+Repository = "https://github.com/viraatdas/sully"
